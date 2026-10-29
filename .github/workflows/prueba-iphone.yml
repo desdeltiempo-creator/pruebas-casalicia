@@ -1,0 +1,62 @@
+name: Prueba app MiRuta en iPhone
+
+# Se corre a mano: pestaña Actions > «Prueba app MiRuta en iPhone» > Run workflow.
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  safari-iphone:
+    # macos-15 es un runner estándar (gratis en repositorios públicos), no uno «larger».
+    runs-on: macos-15
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Versiones de Xcode, Safari y simuladores
+        run: |
+          xcodebuild -version
+          safaridriver --version || true
+          xcrun simctl list runtimes | grep -i ios
+
+      - name: Encender un iPhone del simulador (iOS 17 o más nuevo)
+        run: |
+          UDID=$(xcrun simctl list devices available -j | python3 -c '
+          import json, sys
+          datos = json.load(sys.stdin)["devices"]
+          elegidos = []
+          for runtime, equipos in datos.items():
+              if ".iOS-" not in runtime:
+                  continue
+              version = tuple(int(x) for x in runtime.split(".iOS-")[1].split("-"))
+              if version < (17,):
+                  continue
+              for e in equipos:
+                  if e["name"].startswith("iPhone") and e.get("isAvailable"):
+                      elegidos.append((version, e["name"], e["udid"]))
+          elegidos.sort(reverse=True)
+          print(elegidos[0][2])
+          ')
+          echo "SIMULADOR_UDID=$UDID" >> "$GITHUB_ENV"
+          xcrun simctl list devices | grep "$UDID"
+          xcrun simctl boot "$UDID"
+          xcrun simctl bootstatus "$UDID" -b
+
+      - name: Activar safaridriver
+        run: sudo safaridriver --enable
+
+      - name: Instalar Selenium (solo en el runner)
+        run: python3 -m pip install --break-system-packages selenium==4.27.1
+
+      - name: Probar /appmiruta/ en Safari de iPhone
+        run: python3 prueba_appmiruta.py
+
+      - name: Guardar capturas
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: capturas-iphone
+          path: capturas/
+          retention-days: 30
