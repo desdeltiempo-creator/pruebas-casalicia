@@ -78,7 +78,17 @@ def main():
     opciones.set_capability("safari:deviceType", "iPhone")
     if os.environ.get("SIMULADOR_UDID"):
         opciones.set_capability("safari:deviceUDID", os.environ["SIMULADOR_UDID"])
-    driver = webdriver.Safari(options=opciones)
+    driver = None
+    for intento in range(1, 4):
+        try:
+            driver = webdriver.Safari(options=opciones)
+            break
+        except Exception as error:
+            print("Intento %d de conexión con Safari falló: %s" % (intento, str(error)[:200]), flush=True)
+            time.sleep(20)
+    if driver is None:
+        print("No se pudo conectar con Safari del simulador después de 3 intentos.", flush=True)
+        sys.exit(1)
     try:
         caps = driver.capabilities
         print("Navegador:", caps.get("browserName"), caps.get("browserVersion"), "| sistema:", caps.get("platformName"), flush=True)

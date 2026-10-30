@@ -47,6 +47,12 @@ jobs:
       - name: Activar safaridriver
         run: sudo safaridriver --enable
 
+      - name: Abrir Safari una vez en el simulador
+        run: |
+          xcrun simctl launch "$SIMULADOR_UDID" com.apple.mobilesafari
+          sleep 20
+          xcrun simctl terminate "$SIMULADOR_UDID" com.apple.mobilesafari || true
+
       - name: Instalar Selenium (solo en el runner)
         run: python3 -m pip install --break-system-packages selenium==4.27.1
 
