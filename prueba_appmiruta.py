@@ -118,9 +118,23 @@ def main():
             "if (!i) { return ['no existe', '']; }"
             "var s = getComputedStyle(i), r = i.getBoundingClientRect();"
             "return [(s.display !== 'none' && r.height > 0) ? 'visible' : 'oculta', i.innerText.replace(/\\s+/g, ' ').trim()];")
+        forma = "toque"
+        if instruccion[0] != "visible":
+            driver.execute_script("var b = document.getElementById('superpwa-sticky-bar'); if (b) { b.click(); }")
+            time.sleep(2)
+            captura(driver, "3b-despues-de-tocar-por-codigo")
+            instruccion = driver.execute_script(
+                "var i = document.getElementById('superpwa-iossafari-a2h-banner');"
+                "if (!i) { return ['no existe', '']; }"
+                "var s = getComputedStyle(i), r = i.getBoundingClientRect();"
+                "return [(s.display !== 'none' && r.height > 0) ? 'visible' : 'oculta', i.innerText.replace(/\\s+/g, ' ').trim()];")
+            forma = "toque por código"
+        deteccion = driver.execute_script(
+            "return 'safari:' + (/constructor/i.test(window.HTMLElement) || typeof window.safari !== 'undefined')"
+            " + ' ios:' + /iPad|iPhone|iPod/.test(navigator.userAgent);")
         texto_ok = "Toca" in instruccion[1] and "Pantalla de Inicio" in instruccion[1]
         anotar("3. Instrucción para agregar a pantalla de inicio", instruccion[0] == "visible" and texto_ok,
-               instruccion[0] + ": " + instruccion[1][:120])
+               instruccion[0] + " (" + forma + ", " + deteccion + "): " + instruccion[1][:100])
 
         abrir(driver)
         problemas = driver.execute_script(TAPADOS_REGISTRO)
